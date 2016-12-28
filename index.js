@@ -105,7 +105,7 @@ DriveSpreadSheetSync.prototype.save = function save(data, callback) {
       return callback(error);
     }
     const cellGrabber = makeCellGrabber(self.id_column, sheet, cells);
-    return async.each(data, (row, eachCallback) => {
+    return async.eachSeries(data, (row, eachCallback) => {
       const rowId = row[self.id_column];
       const rowNumToUpdate = cellGrabber(rowId, self.id_column) &&
         (cellGrabber(rowId, self.id_column).value === rowId) &&
