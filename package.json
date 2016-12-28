@@ -1,6 +1,6 @@
 {
   "name": "drive-spreadsheet-sync",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sync Drive spreadsheets",
   "main": "index.js",
   "license": "MIT",
