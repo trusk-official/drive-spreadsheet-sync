@@ -81,58 +81,68 @@ DriveSpreadSheetSync.prototype.getSheetAndCells = function getSheetAndCells(call
 
 DriveSpreadSheetSync.prototype.read = function read(callback) {
   const self = this;
-  self.getSheetAndCells((error, sheet, cells) => {
-    if (error) {
-      return callback(error);
-    }
-    const props = getPropList(self.id_column, sheet, cells);
-    return callback(null, cells.reduce((data, cell) => {
-      if (!cell.value || !(cell.row - 1) || !props[cell.col - 1]) {
-        return data;
+  return new Promise((resolve, reject) => {
+    self.getSheetAndCells((error, sheet, cells) => {
+      if (error) {
+        reject(error);
+        return (callback ? callback(error) : error);
       }
-      const newdata = data.slice();
-      newdata[cell.row - 2] = newdata[cell.row - 2] || {};
-      newdata[cell.row - 2][props[cell.col - 1]] = cell.value;
-      return newdata;
-    }, []));
+      const props = getPropList(self.id_column, sheet, cells);
+      let data = cells.reduce((data, cell) => {
+        if (!cell.value || !(cell.row - 1) || !props[cell.col - 1]) {
+          return data;
+        }
+        const newdata = data.slice();
+        newdata[cell.row - 2] = newdata[cell.row - 2] || {};
+        newdata[cell.row - 2][props[cell.col - 1]] = cell.value;
+        return newdata;
+      }, []);
+      resolve(data);
+      return (callback ? callback(null, data) : data);
+    });
   });
 };
 
 DriveSpreadSheetSync.prototype.save = function save(data, callback) {
   const self = this;
-  self.getSheetAndCells((error, sheet, cells) => {
-    if (error) {
-      return callback(error);
-    }
-    const cellGrabber = makeCellGrabber(self.id_column, sheet, cells);
-    return async.eachSeries(data, (row, eachCallback) => {
-      const rowId = row[self.id_column];
-      const rowNumToUpdate = cellGrabber(rowId, self.id_column) &&
-        (cellGrabber(rowId, self.id_column).value === rowId) &&
-        cellGrabber(rowId, self.id_column).row;
-      async.series([
-        // update or insert
-        function upsert(seriesCallback) {
-          if (rowNumToUpdate) {
-            Object.keys(row).map((key) => {
-              const cellToUpdate = cellGrabber(rowId, key);
-              if (cellToUpdate) {
-                cellToUpdate.value = row[key];
-              }
-              return true;
-            });
-            seriesCallback();
-          } else {
-            sheet.addRow(row, seriesCallback);
-          }
-        },
-      ], eachCallback);
-    }, (e) => {
-      if (e) {
-        return callback(e);
+  return new Promise((resolve, reject) => {
+    self.getSheetAndCells((error, sheet, cells) => {
+      if (error) {
+        reject(error);
+        return (callback ? callback(error) : error);
       }
-      // bulk update
-      return sheet.bulkUpdateCells(cells, callback);
+      const cellGrabber = makeCellGrabber(self.id_column, sheet, cells);
+      async.eachSeries(data, (row, eachCallback) => {
+        const rowId = row[self.id_column];
+        const rowNumToUpdate = cellGrabber(rowId, self.id_column) &&
+          (cellGrabber(rowId, self.id_column).value === rowId) &&
+          cellGrabber(rowId, self.id_column).row;
+        async.series([
+          // update or insert
+          function upsert(seriesCallback) {
+            if (rowNumToUpdate) {
+              Object.keys(row).map((key) => {
+                const cellToUpdate = cellGrabber(rowId, key);
+                if (cellToUpdate) {
+                  cellToUpdate.value = row[key];
+                }
+                return true;
+              });
+              seriesCallback();
+            } else {
+              sheet.addRow(row, seriesCallback);
+            }
+          },
+        ], eachCallback);
+      }, (e) => {
+        if (e) {
+          reject(e);
+          return (callback ? callback(error) : error);
+        }
+        // bulk update
+        return sheet.bulkUpdateCells(cells, callback);
+      });
+      resolve();
     });
   });
 };
