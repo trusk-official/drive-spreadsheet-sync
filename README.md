@@ -36,12 +36,12 @@ testSpreadSheet.save([
   { rid: '1', firstname: 'John', lastname: 'Doe', phone: '555-555-555' },
   { rid: '2', firstname: 'Marty', lastname: 'McFly', phone: '555-555-555' },
   { rid: '3', firstname: 'I\'m', lastname: 'Batman', phone: '555-555-555' },
-], (error) => {
+], (error) => { // or promise
   // Done
 });
 
 // read
-testSpreadSheet.read((error, data) => {
+testSpreadSheet.read((error, data) => { // or promise
   /*
   [{ rid: '1', firstname: 'John', lastname: 'Doe', phone: '555-555-555' },
   { rid: '2', firstname: 'Marty', lastname: 'McFly', phone: '555-555-555' },
