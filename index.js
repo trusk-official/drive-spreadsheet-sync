@@ -81,11 +81,10 @@ DriveSpreadSheetSync.prototype.getSheetAndCells = function getSheetAndCells(call
 
 DriveSpreadSheetSync.prototype.read = function read(callback) {
   const self = this;
-  return new Promise((resolve, reject) => {
+  return (new Promise((resolve, reject) => {
     self.getSheetAndCells((error, sheet, cells) => {
       if (error) {
-        reject(error);
-        return (callback ? callback(error) : error);
+        return reject(error);
       }
       const props = getPropList(self.id_column, sheet, cells);
       let data = cells.reduce((data, cell) => {
@@ -98,18 +97,28 @@ DriveSpreadSheetSync.prototype.read = function read(callback) {
         return newdata;
       }, []);
       resolve(data);
-      return (callback ? callback(null, data) : data);
     });
+  }))
+  .then(data => {
+    if(callback) {
+      callback(null, data);
+    }
+    return data;
+  })
+  .catch(e => {
+    if(callback) {
+      return callback(e);
+    }
+    return e;
   });
 };
 
 DriveSpreadSheetSync.prototype.save = function save(data, callback) {
   const self = this;
-  return new Promise((resolve, reject) => {
+  return (new Promise((resolve, reject) => {
     self.getSheetAndCells((error, sheet, cells) => {
       if (error) {
-        reject(error);
-        return (callback ? callback(error) : error);
+        return reject(error);
       }
       const cellGrabber = makeCellGrabber(self.id_column, sheet, cells);
       async.eachSeries(data, (row, eachCallback) => {
@@ -136,14 +145,29 @@ DriveSpreadSheetSync.prototype.save = function save(data, callback) {
         ], eachCallback);
       }, (e) => {
         if (e) {
-          reject(e);
-          return (callback ? callback(error) : error);
+          return reject(e);
         }
         // bulk update
-        return sheet.bulkUpdateCells(cells, callback);
+        return sheet.bulkUpdateCells(cells, (error, data) => {
+          if(error) {
+            return reject(error);
+          }
+          resolve(data);
+        });
       });
-      resolve();
     });
+  }))
+  .then(_ => {
+    if(callback) {
+      callback();
+    }
+    return;
+  })
+  .catch(e => {
+    if(callback) {
+      return callback(e);
+    }
+    throw new Error(e);
   });
 };
 
