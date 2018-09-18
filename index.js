@@ -1,7 +1,7 @@
 const GoogleSpreadsheet = require('google-spreadsheet');
 const Promise = require('bluebird');
 
-var uncaughtExceptionCb = null;
+let uncaughtExceptionCb = null;
 
 // get a list of props
 const getPropList = function getPropList(idcolumn, sheet, cells) {
@@ -86,7 +86,8 @@ DriveSpreadSheetSync.prototype.read = function read(callback) {
       return newdata;
     }, []);
 
-    callback ? callback(null, data) : resolve(data);
+    callback ? callback(null, data) : null;
+    resolve(data);
   })
   .catch(e => callback ? callback(e) : e);
 };
@@ -117,12 +118,15 @@ DriveSpreadSheetSync.prototype.save = function save(data, callback) {
     .then(async () =>
       await Promise.promisify(sheet.bulkUpdateCells)(cells)
     )
-    .then(data => callback ? callback(null, data) : resolve(data));
+    .then(data => {
+      callback ? callback(null, data) : null;
+      resolve(data);
+    });
   })
   .catch(e => callback ? callback(e) : e);
 };
 
-process.on("uncaughtException", error =>
+process.on('uncaughtException', error =>
   uncaughtExceptionCb ? uncaughtExceptionCb(error) : null
 );
 
