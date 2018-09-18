@@ -1,16 +1,41 @@
 {
   "name": "drive-spreadsheet-sync",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Sync Drive spreadsheets",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "test": "nyc ava --serial --verbose",
+    "lint": "eslint . --fix",
+    "precommit": "lint-staged",
+    "commitmsg": "commitlint -E GIT_PARAMS"
+  },
+  "lint-staged": {
+    "*.js": [
+      "npm run lint --",
+      "git add"
+    ]
+  },
   "dependencies": {
-    "async": "^2.0.1",
+    "bluebird": "^3.5.2",
     "google-spreadsheet": "^2.0.3"
   },
   "devDependencies": {
-    "eslint": "^3.2.2",
-    "eslint-config-airbnb": "^10.0.0",
-    "eslint-plugin-import": "^1.12.0"
+    "@commitlint/cli": "^7.1.1",
+    "ava": "^0.25.0",
+    "eslint": "^5.5.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^3.0.1",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-prettier": "^2.6.2",
+    "husky": "^0.14.3",
+    "lint-staged": "^7.2.2",
+    "prettier": "^1.14.2",
+    "supertest": "^3.1.0"
+  },
+  "ava": {
+    "files": [
+      "tests/*.js"
+    ]
   }
 }
