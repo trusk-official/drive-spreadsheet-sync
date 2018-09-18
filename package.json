@@ -1,11 +1,11 @@
 {
   "name": "drive-spreadsheet-sync",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Sync Drive spreadsheets",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "async": "^2.0.1",
+    "bluebird": "^3.5.2",
     "google-spreadsheet": "^2.0.3"
   },
   "devDependencies": {

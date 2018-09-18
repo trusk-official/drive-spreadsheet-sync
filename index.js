@@ -1,5 +1,7 @@
 const GoogleSpreadsheet = require('google-spreadsheet');
-const async = require('async');
+const Promise = require('bluebird');
+
+var uncaughtExceptionCb = null;
 
 // get a list of props
 const getPropList = function getPropList(idcolumn, sheet, cells) {
@@ -42,133 +44,86 @@ const DriveSpreadSheetSync = function constructor(data) {
   this.doc = new GoogleSpreadsheet(this.spreadsheet);
 };
 
-DriveSpreadSheetSync.prototype.getSheetAndCells = function getSheetAndCells(callback) {
-  const self = this;
-  async.waterfall([
-    // auth
-    function auth(waterfallCallback) {
-      self.doc.useServiceAccountAuth(self.service_account_credentials, waterfallCallback);
-    },
-    // get info
-    function getInfo(waterfallCallback) {
-      self.doc.getInfo((error, info) => {
-        if (error) {
-          return waterfallCallback(error);
-        }
-        self.doc.info = info;
-        return waterfallCallback();
-      });
-    },
-    // get sheet
-    function getSheet(waterfallCallback) {
-      waterfallCallback(null, self.sheet ? self.doc.info.worksheets.find((s) =>
-        s.title === self.sheet
-      ) : self.doc.info.worksheets.sheet[0]);
-    },
-    // get cells
-    function getCells(sheet, waterfallCallback) {
-      if (!sheet) {
-        return waterfallCallback(new Error('No sheet found'));
-      }
-      return sheet.getCells({
-        'min-row': 1,
-        'max-row': sheet.rowCount,
-        'return-empty': true,
-      }, (error, cells) => waterfallCallback(error, sheet, cells));
-    },
-  ], callback);
+DriveSpreadSheetSync.prototype.getSheetAndCells = async function getSheetAndCells() {
+  // auth
+  await Promise.promisify(this.doc.useServiceAccountAuth)(this.service_account_credentials);
+
+  // get info
+  this.doc.info = await Promise.promisify(this.doc.getInfo)();
+
+  // get sheet
+  const sheet = this.sheet ? this.doc.info.worksheets.find((s) =>
+    s.title === this.sheet
+  ) : this.doc.info.worksheets.sheet[0];
+  if (!sheet) {
+    throw new Error('No sheet found');
+  }
+
+  // get cells
+  const cells = await Promise.promisify(sheet.getCells)({
+    'min-row': 1,
+    'max-row': sheet.rowCount,
+    'return-empty': true,
+  });
+
+  return { sheet, cells };
 };
 
 DriveSpreadSheetSync.prototype.read = function read(callback) {
   const self = this;
-  return (new Promise((resolve, reject) => {
-    self.getSheetAndCells((error, sheet, cells) => {
-      if (error) {
-        return reject(error);
+  return new Promise(async (resolve, reject) => {
+    uncaughtExceptionCb = callback || reject;
+
+    const { sheet, cells } = await self.getSheetAndCells();
+    const props = getPropList(self.id_column, sheet, cells);
+    const data = cells.reduce((data, cell) => {
+      if (!cell.value || !(cell.row - 1) || !props[cell.col - 1]) {
+        return data;
       }
-      const props = getPropList(self.id_column, sheet, cells);
-      let data = cells.reduce((data, cell) => {
-        if (!cell.value || !(cell.row - 1) || !props[cell.col - 1]) {
-          return data;
-        }
-        const newdata = data.slice();
-        newdata[cell.row - 2] = newdata[cell.row - 2] || {};
-        newdata[cell.row - 2][props[cell.col - 1]] = cell.value;
-        return newdata;
-      }, []);
-      resolve(data);
-    });
-  }))
-  .then(data => {
-    if(callback) {
-      callback(null, data);
-    }
-    return data;
+      const newdata = data.slice();
+      newdata[cell.row - 2] = newdata[cell.row - 2] || {};
+      newdata[cell.row - 2][props[cell.col - 1]] = cell.value;
+      return newdata;
+    }, []);
+
+    callback ? callback(null, data) : resolve(data);
   })
-  .catch(e => {
-    if(callback) {
-      return callback(e);
-    }
-    return e;
-  });
+  .catch(e => callback ? callback(e) : e);
 };
 
 DriveSpreadSheetSync.prototype.save = function save(data, callback) {
   const self = this;
-  return (new Promise((resolve, reject) => {
-    self.getSheetAndCells((error, sheet, cells) => {
-      if (error) {
-        return reject(error);
+  return new Promise(async (resolve, reject) => {
+    uncaughtExceptionCb = callback || reject;
+
+    const { sheet, cells } = await self.getSheetAndCells();
+    const cellGrabber = makeCellGrabber(self.id_column, sheet, cells);
+    return Promise.map(data, (row) => {
+      const rowId = row[self.id_column];
+      const rowNumToUpdate = cellGrabber(rowId, self.id_column) &&
+        (cellGrabber(rowId, self.id_column).value === rowId) &&
+        cellGrabber(rowId, self.id_column).row;
+      if (!rowNumToUpdate) {
+        return sheet.addRow(row, seriesCallback);
       }
-      const cellGrabber = makeCellGrabber(self.id_column, sheet, cells);
-      async.eachSeries(data, (row, eachCallback) => {
-        const rowId = row[self.id_column];
-        const rowNumToUpdate = cellGrabber(rowId, self.id_column) &&
-          (cellGrabber(rowId, self.id_column).value === rowId) &&
-          cellGrabber(rowId, self.id_column).row;
-        async.series([
-          // update or insert
-          function upsert(seriesCallback) {
-            if (rowNumToUpdate) {
-              Object.keys(row).map((key) => {
-                const cellToUpdate = cellGrabber(rowId, key);
-                if (cellToUpdate) {
-                  cellToUpdate.value = row[key];
-                }
-                return true;
-              });
-              seriesCallback();
-            } else {
-              sheet.addRow(row, seriesCallback);
-            }
-          },
-        ], eachCallback);
-      }, (e) => {
-        if (e) {
-          return reject(e);
+      return Object.keys(row).map((key) => {
+        const cellToUpdate = cellGrabber(rowId, key);
+        if (cellToUpdate) {
+          cellToUpdate.value = row[key];
         }
-        // bulk update
-        return sheet.bulkUpdateCells(cells, (error, data) => {
-          if(error) {
-            return reject(error);
-          }
-          resolve(data);
-        });
+        return true;
       });
-    });
-  }))
-  .then(_ => {
-    if(callback) {
-      callback();
-    }
-    return;
+    })
+    .then(async () =>
+      await Promise.promisify(sheet.bulkUpdateCells)(cells)
+    )
+    .then(data => callback ? callback(null, data) : resolve(data));
   })
-  .catch(e => {
-    if(callback) {
-      return callback(e);
-    }
-    throw new Error(e);
-  });
+  .catch(e => callback ? callback(e) : e);
 };
+
+process.on("uncaughtException", error =>
+  uncaughtExceptionCb ? uncaughtExceptionCb(error) : null
+);
 
 module.exports = DriveSpreadSheetSync;
