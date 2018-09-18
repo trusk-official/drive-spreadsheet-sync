@@ -4,6 +4,9 @@
   "description": "Sync Drive spreadsheets",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "lint": "eslint . --fix"
+  },
   "dependencies": {
     "bluebird": "^3.5.2",
     "google-spreadsheet": "^2.0.3"
