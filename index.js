@@ -1,3 +1,5 @@
+/* eslint-disable no-confusing-arrow */
+
 const GoogleSpreadsheet = require('google-spreadsheet');
 const Promise = require('bluebird');
 
@@ -76,7 +78,7 @@ DriveSpreadSheetSync.prototype.read = function read(callback) {
 
     const { sheet, cells } = await self.getSheetAndCells();
     const props = getPropList(self.id_column, sheet, cells);
-    const data = cells.reduce((data, cell) => {
+    const res = cells.reduce((data, cell) => {
       if (!cell.value || !(cell.row - 1) || !props[cell.col - 1]) {
         return data;
       }
@@ -86,8 +88,8 @@ DriveSpreadSheetSync.prototype.read = function read(callback) {
       return newdata;
     }, []);
 
-    callback ? callback(null, data) : null;
-    resolve(data);
+    if (callback) callback(null, res);
+    resolve(res);
   })
   .catch(e => callback ? callback(e) : e);
 };
@@ -105,7 +107,7 @@ DriveSpreadSheetSync.prototype.save = function save(data, callback) {
         (cellGrabber(rowId, self.id_column).value === rowId) &&
         cellGrabber(rowId, self.id_column).row;
       if (!rowNumToUpdate) {
-        return sheet.addRow(row, seriesCallback);
+        return Promise.promisify(sheet.addRow)(row);
       }
       return Object.keys(row).map((key) => {
         const cellToUpdate = cellGrabber(rowId, key);
@@ -118,9 +120,9 @@ DriveSpreadSheetSync.prototype.save = function save(data, callback) {
     .then(async () =>
       await Promise.promisify(sheet.bulkUpdateCells)(cells)
     )
-    .then(data => {
-      callback ? callback(null, data) : null;
-      resolve(data);
+    .then(res => {
+      if (callback) callback(null, res);
+      resolve(res);
     });
   })
   .catch(e => callback ? callback(e) : e);
