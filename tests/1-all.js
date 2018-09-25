@@ -3,7 +3,7 @@ const test = require("ava");
 const fs = require("fs");
 
 const SyncDriveSheet = require("../index");
-const googleJwt = fs.existsSync("../google-jwt.json")
+const googleJwt = fs.existsSync(`${__dirname}/../google-jwt.json`)
   ? require("../google-jwt")
   : null;
 
@@ -12,9 +12,10 @@ const idColumn = process.env.SPREADSHEET_COLUMN_ID || "rid";
 const sheet = process.env.SPREADSHEET_NAME || "test_sync_driver_sheet";
 const spreadsheetCredentials =
   process.env.SPEADSHEET_CREDENTIALS ||
-  process.env.SPEADSHEET_CREDENTIALS_STRING
+  (process.env.SPEADSHEET_CREDENTIALS_STRING
     ? JSON.parse(process.env.SPEADSHEET_CREDENTIALS_STRING)
-    : null || googleJwt;
+    : null) ||
+  googleJwt;
 
 /**
  * @description : Initialize spreadsheet
