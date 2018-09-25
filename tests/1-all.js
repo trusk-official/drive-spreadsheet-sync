@@ -16,10 +16,7 @@ const spreadsheetCredentials =
   process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY
     ? {
         client_email: process.env.SPEADSHEET_CREDENTIALS_CLIENT_EMAIL,
-        private_key: process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY.replace(
-          /\\n/g,
-          "\n"
-        )
+        private_key: JSON.parse(process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY)
       }
     : null) ||
   googleJwt;
