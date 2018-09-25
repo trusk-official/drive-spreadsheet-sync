@@ -3,7 +3,7 @@ const test = require("ava");
 const fs = require("fs");
 
 const SyncDriveSheet = require("../index");
-const googleJwt = fs.existsSync("../google-jwt")
+const googleJwt = fs.existsSync("../google-jwt.json")
   ? require("../google-jwt")
   : null;
 
