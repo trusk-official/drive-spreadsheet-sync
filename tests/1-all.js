@@ -7,7 +7,11 @@ const googleJwt = require("../google-jwt");
 const spreadsheetId = process.env.SPREADSHEET_ID;
 const idColumn = process.env.SPREADSHEET_COLUMN_ID || "rid";
 const sheet = process.env.SPREADSHEET_NAME || "test_sync_driver_sheet";
-const spreadsheetCredentials = process.env.SPEADSHEET_CREDENTIALS || googleJwt;
+const spreadsheetCredentials =
+  process.env.SPEADSHEET_CREDENTIALS ||
+  process.env.SPEADSHEET_CREDENTIALS_STRING
+    ? JSON.parse(process.env.SPEADSHEET_CREDENTIALS_STRING)
+    : null || googleJwt;
 
 /**
  * @description : Initialize spreadsheet
