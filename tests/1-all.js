@@ -12,22 +12,11 @@ const idColumn = process.env.SPREADSHEET_COLUMN_ID || "rid";
 const sheet = process.env.SPREADSHEET_NAME || "test_sync_driver_sheet";
 const spreadsheetCredentials =
   process.env.SPEADSHEET_CREDENTIALS ||
-  (process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY &&
-  process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY_ID
+  (process.env.SPEADSHEET_CREDENTIALS_CLIENT_EMAIL &&
+  process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY
     ? {
-        type: "service_account",
-        project_id: "my-project-1523276092256",
-        private_key_id: process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY_ID,
-        private_key: process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY,
-        client_email:
-          "circleci@my-project-1523276092256.iam.gserviceaccount.com",
-        client_id: "115471901234885273641",
-        auth_uri: "https://accounts.google.com/o/oauth2/auth",
-        token_uri: "https://oauth2.googleapis.com/token",
-        auth_provider_x509_cert_url:
-          "https://www.googleapis.com/oauth2/v1/certs",
-        client_x509_cert_url:
-          "https://www.googleapis.com/robot/v1/metadata/x509/circleci%40my-project-1523276092256.iam.gserviceaccount.com"
+        client_email: process.env.SPEADSHEET_CREDENTIALS_CLIENT_EMAIL,
+        private_key: process.env.SPEADSHEET_CREDENTIALS_PRIVATE_KEY
       }
     : null) ||
   googleJwt;
