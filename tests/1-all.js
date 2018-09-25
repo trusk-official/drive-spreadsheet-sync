@@ -1,8 +1,11 @@
 const Promise = require("bluebird");
 const test = require("ava");
+const fs = require("fs");
 
 const SyncDriveSheet = require("../index");
-const googleJwt = require("../google-jwt");
+const googleJwt = fs.existsSync("../google-jwt")
+  ? require("../google-jwt")
+  : null;
 
 const spreadsheetId = process.env.SPREADSHEET_ID;
 const idColumn = process.env.SPREADSHEET_COLUMN_ID || "rid";
