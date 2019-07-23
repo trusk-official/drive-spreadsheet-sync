@@ -17,21 +17,21 @@
     ]
   },
   "dependencies": {
-    "bluebird": "^3.5.2",
-    "google-spreadsheet": "^2.0.3"
+    "bluebird": "^3.5.5",
+    "google-spreadsheet": "^2.0.7"
   },
   "devDependencies": {
-    "@commitlint/cli": "^7.1.1",
-    "ava": "^0.25.0",
-    "eslint": "^5.5.0",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-config-prettier": "^3.0.1",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-prettier": "^2.6.2",
-    "husky": "^0.14.3",
-    "lint-staged": "^7.2.2",
-    "prettier": "^1.14.2",
-    "supertest": "^3.1.0"
+    "@commitlint/cli": "^8.1.0",
+    "ava": "^2.2.0",
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-prettier": "^3.1.0",
+    "husky": "^3.0.1",
+    "lint-staged": "^9.2.0",
+    "prettier": "^1.18.2",
+    "supertest": "^4.0.2"
   },
   "ava": {
     "files": [
